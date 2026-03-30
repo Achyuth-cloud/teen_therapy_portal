@@ -22,7 +22,8 @@ const Login = () => {
     setLoading(true);
     const result = await login(email, password);
     if (result.success) {
-      navigate('/student');
+      const role = email.includes('therapist') ? 'therapist' : 'student';
+      navigate(role === 'student' ? '/student' : '/therapist');
     }
     setLoading(false);
   };
