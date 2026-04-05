@@ -119,12 +119,11 @@ const Register = () => {
     setLoading(true);
     
     const result = await register({
-      name: formData.fullName,
+      fullName: formData.fullName,
       email: formData.email,
       password: formData.password,
-      age: formData.age,
-      gender: formData.gender,
-      role: 'student'
+      age: Number(formData.age),
+      gender: formData.gender
     });
     
     if (result.success) {

@@ -22,7 +22,7 @@ const Login = () => {
     setLoading(true);
     const result = await login(email, password);
     if (result.success) {
-      const role = email.includes('therapist') ? 'therapist' : 'student';
+      const role = result.user?.role;
       navigate(role === 'student' ? '/student' : '/therapist');
     }
     setLoading(false);
@@ -70,7 +70,7 @@ const Login = () => {
             <p className="auth-eyebrow">Welcome back</p>
             <h2>Sign in to continue</h2>
             <p className="auth-panel__copy">
-              Use a demo account below or log in with your existing credentials.
+              Sign in with the account created in the backend system.
             </p>
           </div>
 
@@ -114,22 +114,6 @@ const Login = () => {
               <FaArrowRight />
             </button>
           </form>
-
-          <div className="auth-demo">
-            <p className="auth-demo__title">Demo Accounts</p>
-            <div className="auth-demo__grid">
-              <div className="auth-demo__card">
-                <span>Student</span>
-                <strong>student@example.com</strong>
-                <small>password123</small>
-              </div>
-              <div className="auth-demo__card">
-                <span>Therapist</span>
-                <strong>therapist@example.com</strong>
-                <small>password123</small>
-              </div>
-            </div>
-          </div>
 
           <div className="auth-panel__footer">
             <span>Need an account?</span>
