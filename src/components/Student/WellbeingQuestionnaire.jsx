@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaHeart, FaSmile, FaFrown, FaMeh, FaAngry } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { wellbeingApi, getErrorMessage } from '../../services/api';
@@ -8,7 +9,12 @@ const defaultQuestions = [
   { id: 2, text: 'Have you been feeling anxious or worried recently?' },
   { id: 3, text: 'How well have you been sleeping?' },
   { id: 4, text: 'How connected do you feel to others?' },
-  { id: 5, text: 'How would you rate your stress levels?' }
+  { id: 5, text: 'How would you rate your stress levels?' },
+  { id: 6, text: 'How easy has it been to concentrate on school or college work recently?' },
+  { id: 7, text: 'How supported do you feel by friends, family, or trusted adults?' },
+  { id: 8, text: 'How often have you felt overwhelmed in the past week?' },
+  { id: 9, text: 'How confident do you feel about handling day-to-day challenges right now?' },
+  { id: 10, text: 'How hopeful do you feel about the next few weeks?' }
 ];
 
 const options = [
@@ -20,6 +26,7 @@ const options = [
 ];
 
 const WellbeingQuestionnaire = () => {
+  const navigate = useNavigate();
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [averageScore, setAverageScore] = useState(0);
@@ -65,6 +72,9 @@ const WellbeingQuestionnaire = () => {
       setAverageScore(Number(data.averageScore || 0));
       setSubmitted(true);
       toast.success('Questionnaire submitted successfully');
+      setTimeout(() => {
+        navigate('/student/book', { state: { questionnaireSubmitted: true } });
+      }, 1200);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to submit questionnaire'));
     }
@@ -79,10 +89,10 @@ const WellbeingQuestionnaire = () => {
           Your wellbeing score: {averageScore.toFixed(1)}/5
         </p>
         <p style={{ color: '#666' }}>
-          Your responses have been recorded and are now available for your therapist to review.
+          Your responses have been recorded and are now available for your therapist to review before approval.
         </p>
-        <button className="btn btn-primary" onClick={() => window.location.reload()} style={{ marginTop: '2rem' }}>
-          Take Another Assessment
+        <button className="btn btn-primary" onClick={() => navigate('/student/book', { state: { questionnaireSubmitted: true } })} style={{ marginTop: '2rem' }}>
+          Continue To Booking
         </button>
       </div>
     );
@@ -92,7 +102,7 @@ const WellbeingQuestionnaire = () => {
     <div>
       <h1 style={{ fontSize: '1.875rem', marginBottom: '2rem' }}>Wellbeing Check-in</h1>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
-        Take a moment to reflect on how you are feeling. Your responses help your therapist better understand and support you.
+        Complete all 10 questions before booking an appointment. Your responses help your therapist better understand and support you.
       </p>
 
       {defaultQuestions.map((question, index) => (

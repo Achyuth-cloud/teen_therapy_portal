@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { FaUserCircle, FaSignOutAlt, FaHeart } from 'react-icons/fa';
+import NotificationPanel from '../Common/NotificationPanel';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -11,6 +12,12 @@ const Navbar = () => {
     logout();
     navigate('/login');
   };
+
+  const navLinkStyle = ({ isActive }) => ({
+    textDecoration: 'none',
+    color: isActive ? '#5e72e4' : '#666',
+    fontWeight: isActive ? 600 : 400
+  });
 
   return (
     <nav style={{
@@ -40,27 +47,39 @@ const Navbar = () => {
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <Link to={user?.role === 'student' ? '/student' : '/therapist'} style={{ textDecoration: 'none', color: '#666' }}>
+          <NavLink to={user?.role === 'student' ? '/student' : '/therapist'} style={navLinkStyle} end>
             Dashboard
-          </Link>
+          </NavLink>
           {user?.role === 'student' && (
             <>
-              <Link to="/student/book" style={{ textDecoration: 'none', color: '#666' }}>Book Session</Link>
-              <Link to="/student/appointments" style={{ textDecoration: 'none', color: '#666' }}>Appointments</Link>
-              <Link to="/student/resources" style={{ textDecoration: 'none', color: '#666' }}>Resources</Link>
+              <NavLink to="/student/book" style={navLinkStyle}>Book Session</NavLink>
+              <NavLink to="/student/appointments" style={navLinkStyle}>Appointments</NavLink>
+              <NavLink to="/student/resources" style={navLinkStyle}>Resources</NavLink>
             </>
           )}
           {user?.role === 'therapist' && (
             <>
-              <Link to="/therapist/requests" style={{ textDecoration: 'none', color: '#666' }}>Appointments</Link>
-              <Link to="/therapist/requests" style={{ textDecoration: 'none', color: '#666' }}>Requests</Link>
-              <Link to="/therapist/availability" style={{ textDecoration: 'none', color: '#666' }}>Availability</Link>
+              <NavLink to="/therapist/requests" style={navLinkStyle}>Appointments</NavLink>
+              <NavLink to="/therapist/availability" style={navLinkStyle}>Availability</NavLink>
             </>
           )}
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <FaUserCircle size={24} style={{ color: '#666' }} />
-            <span style={{ color: '#333' }}>{user?.name}</span>
+            <NavLink
+              to={user?.role === 'student' ? '/student/settings' : '/therapist/settings'}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                textDecoration: 'none',
+                color: isActive ? '#5e72e4' : '#333',
+                fontWeight: isActive ? 600 : 400
+              })}
+            >
+              <FaUserCircle size={24} style={{ color: '#666' }} />
+              <span>{user?.name}</span>
+            </NavLink>
+            <NotificationPanel />
             <button
               onClick={handleLogout}
               style={{

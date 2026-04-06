@@ -43,7 +43,13 @@ api.interceptors.request.use((config) => {
 export const authApi = {
   login: (payload) => api.post('/auth/login', payload),
   register: (payload) => api.post('/auth/register', payload),
-  getMe: () => api.get('/auth/me')
+  getMe: () => api.get('/auth/me'),
+  updateProfile: (payload) => api.put('/auth/profile', payload)
+};
+
+export const studentApi = {
+  getProfile: () => api.get('/students/profile'),
+  updateProfile: (payload) => api.put('/students/profile', payload)
 };
 
 export const therapistApi = {
@@ -51,7 +57,8 @@ export const therapistApi = {
   getStats: () => api.get('/therapists/stats'),
   getAvailability: (params = {}) => api.get('/therapists/availability', { params }),
   addAvailability: (payload) => api.post('/therapists/availability', payload),
-  deleteAvailability: (id) => api.delete(`/therapists/availability/${id}`)
+  deleteAvailability: (id) => api.delete(`/therapists/availability/${id}`),
+  updateProfile: (payload) => api.put('/therapists/profile', payload)
 };
 
 export const appointmentApi = {
@@ -59,7 +66,9 @@ export const appointmentApi = {
   getStudentAppointments: () => api.get('/appointments/student'),
   getTherapistAppointments: () => api.get('/appointments/therapist'),
   updateStatus: (id, payload) => api.put(`/appointments/${id}/status`, payload),
+  saveNotes: (id, payload) => api.put(`/appointments/${id}/notes`, payload),
   cancel: (id) => api.put(`/appointments/${id}/cancel`),
+  reschedule: (id, payload) => api.put(`/appointments/${id}/reschedule`, payload),
   getAvailableSlots: (params) => api.get('/appointments/available-slots', { params })
 };
 
@@ -77,11 +86,10 @@ export const resourceApi = {
   getCategories: () => api.get('/resources/categories')
 };
 
-export const sessionNoteApi = {
-  getByAppointment: (appointmentId) => api.get(`/session-notes/appointment/${appointmentId}`),
-  getStudentNotes: () => api.get('/session-notes/student'),
-  create: (payload) => api.post('/session-notes', payload),
-  update: (noteId, payload) => api.put(`/session-notes/${noteId}`, payload)
+export const notificationApi = {
+  getAll: () => api.get('/notifications'),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all')
 };
 
 export default api;

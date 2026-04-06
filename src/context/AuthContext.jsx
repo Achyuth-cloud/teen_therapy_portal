@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import api, { getErrorMessage, setAuthToken } from '../services/api';
+import { authApi, getErrorMessage, setAuthToken } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
       try {
         setAuthToken(token);
-        const { data } = await api.get('/auth/me');
+        const { data } = await authApi.getMe();
         const normalizedUser = {
           id: data.user_id,
           name: data.full_name,
@@ -50,9 +50,28 @@ export const AuthProvider = ({ children }) => {
     loadCurrentUser();
   }, [token]);
 
+  const refreshUser = async () => {
+    if (!token) {
+      return null;
+    }
+
+    const { data } = await authApi.getMe();
+    const normalizedUser = {
+      id: data.user_id,
+      name: data.full_name,
+      email: data.email,
+      role: data.role,
+      roleData: data.roleData || null
+    };
+
+    localStorage.setItem('user', JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
+    return normalizedUser;
+  };
+
   const login = async (email, password) => {
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await authApi.login({ email, password });
 
       setAuthToken(data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -69,7 +88,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const { data } = await api.post('/auth/register', userData);
+      const { data } = await authApi.register(userData);
 
       setAuthToken(data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -97,6 +116,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
     loading,
     isAuthenticated: !!user
   };

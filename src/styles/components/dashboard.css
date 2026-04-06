@@ -123,38 +123,6 @@
   color: #ffd600;
 }
 
-/* Chart Cards */
-.chart-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 0 2rem 0 rgba(136, 152, 170, 0.15);
-  margin-bottom: 1.5rem;
-}
-
-.chart-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e9ecef;
-  background: white;
-}
-
-.chart-header h3,
-.chart-header h4 {
-  margin: 0;
-  font-weight: 600;
-  color: #172b4d;
-}
-
-.chart-header p {
-  margin: 0.25rem 0 0;
-  font-size: 0.875rem;
-  color: #8898aa;
-}
-
-.chart-body {
-  padding: 1.5rem;
-}
-
 /* Appointment List */
 .appointment-list {
   list-style: none;

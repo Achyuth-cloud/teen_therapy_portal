@@ -31,7 +31,7 @@ const Sidebar = () => {
     { path: '/student/appointments', icon: FaClock, label: 'My Appointments' },
     { path: '/student/questionnaire', icon: FaBrain, label: 'Wellbeing Check-in' },
     { path: '/student/resources', icon: FaBook, label: 'Resources' },
-    { path: '/student/history', icon: FaChartLine, label: 'Session History' }
+    { path: '/student/history', icon: FaChartLine, label: 'Questionnaire History' }
   ];
 
   const therapistLinks = [
@@ -272,7 +272,7 @@ const Sidebar = () => {
 
           {/* Settings Link */}
           <NavLink
-            to="/settings"
+            to={user?.role === 'student' ? '/student/settings' : '/therapist/settings'}
             style={{
               display: 'flex',
               alignItems: 'center',

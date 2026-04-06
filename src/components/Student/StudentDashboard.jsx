@@ -1,22 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendarAlt, FaBook, FaHeart, FaChartLine, FaSmile, FaBrain } from 'react-icons/fa';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
+import { FaCalendarAlt, FaBook, FaHeart, FaChartLine, FaSmile } from 'react-icons/fa';
 import { appointmentApi, wellbeingApi } from '../../services/api';
 import { formatDateTime } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -24,19 +11,16 @@ const StudentDashboard = () => {
   const [stats, setStats] = useState({
     totalSessions: 0,
     upcomingSessions: 0,
-    completedSessions: 0,
-    wellbeingScore: 0
+    completedSessions: 0
   });
   const [recentAppointments, setRecentAppointments] = useState([]);
-  const [trendLabels, setTrendLabels] = useState([]);
-  const [trendData, setTrendData] = useState([]);
+  const [latestCheckIn, setLatestCheckIn] = useState(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [{ data: appointments }, { data: trends }, { data: history }] = await Promise.all([
+        const [{ data: appointments }, { data: history }] = await Promise.all([
           appointmentApi.getStudentAppointments(),
-          wellbeingApi.getTrends(),
           wellbeingApi.getHistory()
         ]);
 
@@ -51,19 +35,17 @@ const StudentDashboard = () => {
         setStats({
           totalSessions: appointments.length,
           upcomingSessions: upcoming.length,
-          completedSessions: completed.length,
-          wellbeingScore: latestHistory ? Number(latestHistory.average_score || 0) * 20 : 0
+          completedSessions: completed.length
         });
         setRecentAppointments(upcoming.slice(0, 3));
-        setTrendLabels(trends.map((item) => item.period));
-        setTrendData(trends.map((item) => Number(item.avg_score || 0) * 20));
+        setLatestCheckIn(history[0] || null);
       } catch (error) {
         setStats({
           totalSessions: 0,
           upcomingSessions: 0,
-          completedSessions: 0,
-          wellbeingScore: 0
+          completedSessions: 0
         });
+        setLatestCheckIn(null);
       } finally {
         setLoading(false);
       }
@@ -72,40 +54,10 @@ const StudentDashboard = () => {
     loadDashboard();
   }, []);
 
-  const chartData = {
-    labels: trendLabels,
-    datasets: [
-      {
-        label: 'Wellbeing Score',
-        data: trendData,
-        borderColor: '#5e72e4',
-        backgroundColor: 'rgba(94, 114, 228, 0.1)',
-        tension: 0.4,
-        fill: true
-      }
-    ]
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' },
-      title: { display: false }
-    },
-    scales: {
-      y: {
-        min: 0,
-        max: 100,
-        grid: { color: '#e9ecef' }
-      }
-    }
-  };
-
   const cards = [
     { icon: FaCalendarAlt, title: 'Total Sessions', value: stats.totalSessions, color: '#5e72e4', bg: '#eef2ff' },
     { icon: FaBook, title: 'Upcoming', value: stats.upcomingSessions, color: '#fb6340', bg: '#fff0ed' },
-    { icon: FaSmile, title: 'Completed', value: stats.completedSessions, color: '#2dce89', bg: '#e8f5e9' },
-    { icon: FaBrain, title: 'Wellbeing Score', value: `${Math.round(stats.wellbeingScore)}%`, color: '#11cdef', bg: '#e3f7fc' }
+    { icon: FaSmile, title: 'Completed', value: stats.completedSessions, color: '#2dce89', bg: '#e8f5e9' }
   ];
 
   if (loading) {
@@ -139,13 +91,23 @@ const StudentDashboard = () => {
       <div className="grid grid-2" style={{ marginBottom: '2rem' }}>
         <div className="card">
           <div className="card-header">
-            <h4>Wellbeing Progress</h4>
+            <h4>Latest Check-in</h4>
           </div>
           <div className="card-body">
-            {trendData.length > 0 ? (
-              <Line data={chartData} options={chartOptions} />
+            {latestCheckIn ? (
+              <div>
+                <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                  Most recent questionnaire submitted successfully
+                </p>
+                <p style={{ color: '#666', marginBottom: '0.5rem' }}>
+                  Average score: {Number(latestCheckIn.average_score || 0).toFixed(1)}/5
+                </p>
+                <p style={{ color: '#666' }}>
+                  Use Questionnaire History to review your earlier submissions.
+                </p>
+              </div>
             ) : (
-              <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>Complete a wellbeing check-in to see your progress here.</p>
+              <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>Complete a wellbeing check-in to see your latest submission summary here.</p>
             )}
           </div>
         </div>
@@ -185,7 +147,7 @@ const StudentDashboard = () => {
             <div className="card-body" style={{ textAlign: 'center' }}>
               <FaHeart size={32} style={{ color: '#fb6340', marginBottom: '1rem' }} />
               <h4>Wellbeing Check-in</h4>
-              <p style={{ color: '#666', marginTop: '0.5rem' }}>Share how you have been feeling lately.</p>
+              <p style={{ color: '#666', marginTop: '0.5rem' }}>Complete the 10-question check-in before booking a session.</p>
             </div>
           </div>
         </Link>
@@ -204,8 +166,8 @@ const StudentDashboard = () => {
           <div className="card" style={{ height: '100%' }}>
             <div className="card-body" style={{ textAlign: 'center' }}>
               <FaChartLine size={32} style={{ color: '#2dce89', marginBottom: '1rem' }} />
-              <h4>Session History</h4>
-              <p style={{ color: '#666', marginTop: '0.5rem' }}>Review therapist notes from completed sessions.</p>
+              <h4>Questionnaire History</h4>
+              <p style={{ color: '#666', marginTop: '0.5rem' }}>Review your previous wellbeing questionnaire submissions.</p>
             </div>
           </div>
         </Link>

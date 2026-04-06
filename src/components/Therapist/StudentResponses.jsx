@@ -3,14 +3,7 @@ import { FaSearch, FaChartLine, FaBrain, FaCalendarAlt } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { wellbeingApi, getErrorMessage } from '../../services/api';
 import { formatDate } from '../../utils/helpers';
-
-const questionLabels = {
-  1: 'Overall mood',
-  2: 'Anxiety level',
-  3: 'Sleep quality',
-  4: 'Connection to others',
-  5: 'Stress level'
-};
+import { wellbeingQuestionLabels } from '../../utils/wellbeingQuestions';
 
 const StudentResponses = () => {
   const [students, setStudents] = useState([]);
@@ -117,7 +110,7 @@ const StudentResponses = () => {
                 {latestResponse.responses.map((response, index) => (
                   <div key={`${response.questionId}-${index}`} style={{ padding: '0.75rem', background: '#f8f9fe', borderRadius: '8px', marginBottom: '0.75rem' }}>
                     <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
-                      <strong>{questionLabels[response.questionId] || `Question ${response.questionId}`}</strong>
+                      <strong>{wellbeingQuestionLabels[response.questionId] || `Question ${response.questionId}`}</strong>
                     </div>
                     <div className="flex" style={{ alignItems: 'center', gap: '1rem' }}>
                       <div style={{ flex: 1, height: '8px', background: '#e9ecef', borderRadius: '4px' }}>

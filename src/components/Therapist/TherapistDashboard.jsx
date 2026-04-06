@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUsers, FaSpinner, FaCheckCircle, FaCalendarAlt } from 'react-icons/fa';
-import { Line } from 'react-chartjs-2';
 import { therapistApi, appointmentApi, getErrorMessage } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatDateTime } from '../../utils/helpers';
@@ -41,39 +40,10 @@ const TherapistDashboard = () => {
     () => appointments.filter((appointment) => appointment.status === 'pending').slice(0, 5),
     [appointments]
   );
-
-  const chartGroups = useMemo(() => {
-    const groups = new Map();
-    appointments
-      .filter((appointment) => appointment.status === 'completed')
-      .forEach((appointment) => {
-        const key = appointment.appointment_date;
-        groups.set(key, (groups.get(key) || 0) + 1);
-      });
-
-    return Array.from(groups.entries()).slice(-6);
-  }, [appointments]);
-
-  const chartData = {
-    labels: chartGroups.map(([label]) => label),
-    datasets: [
-      {
-        label: 'Completed Sessions',
-        data: chartGroups.map(([, count]) => count),
-        borderColor: '#5e72e4',
-        backgroundColor: 'rgba(94, 114, 228, 0.1)',
-        tension: 0.4,
-        fill: true
-      }
-    ]
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' }
-    }
-  };
+  const upcomingApproved = useMemo(
+    () => appointments.filter((appointment) => appointment.status === 'approved').slice(0, 5),
+    [appointments]
+  );
 
   const cards = [
     { icon: FaUsers, title: 'Active Students', value: stats.total_students || 0, color: '#5e72e4', bg: '#eef2ff' },
@@ -90,7 +60,7 @@ const TherapistDashboard = () => {
     <div>
       <div className="flex-between" style={{ marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Welcome back, {user?.name?.split(' ')[0] || 'Therapist'}</h1>
+          <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Welcome back, {user?.name || 'Therapist'}</h1>
           <p style={{ color: '#666' }}>Here is an overview of your therapy practice.</p>
         </div>
         <Link to="/therapist/availability" className="btn btn-primary">
@@ -113,13 +83,25 @@ const TherapistDashboard = () => {
       <div className="grid grid-2" style={{ marginBottom: '2rem' }}>
         <div className="card">
           <div className="card-header">
-            <h4>Session Analytics</h4>
+            <h4>Upcoming Approved Sessions</h4>
           </div>
           <div className="card-body">
-            {chartGroups.length > 0 ? (
-              <Line data={chartData} options={chartOptions} />
+            {upcomingApproved.length > 0 ? (
+              upcomingApproved.map((appointment) => (
+                <div key={appointment.appointment_id} style={{ padding: '1rem', borderBottom: '1px solid #e9ecef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontWeight: 500 }}>{appointment.student_name}</p>
+                    <p style={{ fontSize: '0.875rem', color: '#666' }}>
+                      {formatDateTime(appointment.appointment_date, appointment.appointment_time)}
+                    </p>
+                  </div>
+                  <span style={{ background: '#e8f5e9', color: '#2dce89', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem' }}>
+                    Approved
+                  </span>
+                </div>
+              ))
             ) : (
-              <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>Analytics will appear after sessions are completed.</p>
+              <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>No approved sessions scheduled yet.</p>
             )}
           </div>
         </div>

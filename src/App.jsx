@@ -11,10 +11,11 @@ import MyAppointments from './components/Student/MyAppointments';
 import WellbeingQuestionnaire from './components/Student/WellbeingQuestionnaire';
 import Resources from './components/Student/Resources';
 import SessionHistory from './components/Student/SessionHistory';
+import StudentSettings from './components/Student/StudentSettings';
 import AppointmentRequests from './components/Therapist/AppointmentRequests';
 import AvailabilityManager from './components/Therapist/AvailabilityManager';
 import StudentResponses from './components/Therapist/StudentResponses';
-import SessionNotes from './components/Therapist/SessionNotes';
+import TherapistSettings from './components/Therapist/TherapistSettings';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Layout from './components/Layout/Layout';
 
@@ -35,13 +36,14 @@ function AppRoutes() {
           <Route path="/student/questionnaire" element={<WellbeingQuestionnaire />} />
           <Route path="/student/resources" element={<Resources />} />
           <Route path="/student/history" element={<SessionHistory />} />
+          <Route path="/student/settings" element={<StudentSettings />} />
           
           {/* Therapist Routes */}
           <Route path="/therapist" element={<TherapistDashboard />} />
           <Route path="/therapist/requests" element={<AppointmentRequests />} />
           <Route path="/therapist/availability" element={<AvailabilityManager />} />
           <Route path="/therapist/responses" element={<StudentResponses />} />
-          <Route path="/therapist/notes/:appointmentId" element={<SessionNotes />} />
+          <Route path="/therapist/settings" element={<TherapistSettings />} />
         </Route>
       </Route>
       
