@@ -46,11 +46,13 @@ const Navbar = () => {
           {user?.role === 'student' && (
             <>
               <Link to="/student/book" style={{ textDecoration: 'none', color: '#666' }}>Book Session</Link>
+              <Link to="/student/appointments" style={{ textDecoration: 'none', color: '#666' }}>Appointments</Link>
               <Link to="/student/resources" style={{ textDecoration: 'none', color: '#666' }}>Resources</Link>
             </>
           )}
           {user?.role === 'therapist' && (
             <>
+              <Link to="/therapist/requests" style={{ textDecoration: 'none', color: '#666' }}>Appointments</Link>
               <Link to="/therapist/requests" style={{ textDecoration: 'none', color: '#666' }}>Requests</Link>
               <Link to="/therapist/availability" style={{ textDecoration: 'none', color: '#666' }}>Availability</Link>
             </>

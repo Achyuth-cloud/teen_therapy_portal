@@ -179,9 +179,9 @@ const Register = () => {
           textAlign: 'center'
         }}>
           <FaHeart size={48} style={{ color: 'white', marginBottom: '1rem' }} />
-          <h2 style={{ color: 'white', margin: 0 }}>Create Account</h2>
+          <h2 style={{ color: 'white', margin: 0 }}>Student Registration</h2>
           <p style={{ color: 'rgba(255,255,255,0.9)', marginTop: '0.5rem' }}>
-            Join our safe and supportive community
+            Create a student account to access counselling support and wellbeing tools
           </p>
         </div>
         

@@ -1,28 +1,65 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaCalendarCheck, FaUsers, FaClock, FaChartLine, FaCheckCircle, FaSpinner, FaCalendarAlt } from 'react-icons/fa';
+import { FaUsers, FaSpinner, FaCheckCircle, FaCalendarAlt } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
+import { therapistApi, appointmentApi, getErrorMessage } from '../../services/api';
+import toast from 'react-hot-toast';
+import { formatDateTime } from '../../utils/helpers';
+import { useAuth } from '../../context/AuthContext';
 
 const TherapistDashboard = () => {
-  const [stats] = useState({
-    totalStudents: 24,
-    pendingRequests: 5,
-    completedSessions: 48,
-    upcomingSessions: 8
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    total_students: 0,
+    pending_requests: 0,
+    completed_sessions: 0,
+    upcoming_sessions: 0
   });
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [recentRequests] = useState([
-    { id: 1, student: 'Alex Thompson', date: '2024-03-25', time: '14:00', status: 'pending' },
-    { id: 2, student: 'Emma Watson', date: '2024-03-25', time: '15:30', status: 'pending' },
-    { id: 3, student: 'James Wilson', date: '2024-03-26', time: '11:00', status: 'pending' }
-  ]);
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [{ data: statsData }, { data: appointmentData }] = await Promise.all([
+          therapistApi.getStats(),
+          appointmentApi.getTherapistAppointments()
+        ]);
+        setStats(statsData);
+        setAppointments(appointmentData);
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to load therapist dashboard'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const recentRequests = useMemo(
+    () => appointments.filter((appointment) => appointment.status === 'pending').slice(0, 5),
+    [appointments]
+  );
+
+  const chartGroups = useMemo(() => {
+    const groups = new Map();
+    appointments
+      .filter((appointment) => appointment.status === 'completed')
+      .forEach((appointment) => {
+        const key = appointment.appointment_date;
+        groups.set(key, (groups.get(key) || 0) + 1);
+      });
+
+    return Array.from(groups.entries()).slice(-6);
+  }, [appointments]);
 
   const chartData = {
-    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+    labels: chartGroups.map(([label]) => label),
     datasets: [
       {
-        label: 'Sessions Completed',
-        data: [6, 8, 10, 12, 9, 11],
+        label: 'Completed Sessions',
+        data: chartGroups.map(([, count]) => count),
         borderColor: '#5e72e4',
         backgroundColor: 'rgba(94, 114, 228, 0.1)',
         tension: 0.4,
@@ -34,25 +71,27 @@ const TherapistDashboard = () => {
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'top',
-      }
+      legend: { position: 'top' }
     }
   };
 
   const cards = [
-    { icon: FaUsers, title: 'Active Students', value: stats.totalStudents, color: '#5e72e4', bg: '#eef2ff' },
-    { icon: FaSpinner, title: 'Pending Requests', value: stats.pendingRequests, color: '#fb6340', bg: '#fff0ed' },
-    { icon: FaCheckCircle, title: 'Completed Sessions', value: stats.completedSessions, color: '#2dce89', bg: '#e8f5e9' },
-    { icon: FaCalendarAlt, title: 'Upcoming Sessions', value: stats.upcomingSessions, color: '#11cdef', bg: '#e3f7fc' }
+    { icon: FaUsers, title: 'Active Students', value: stats.total_students || 0, color: '#5e72e4', bg: '#eef2ff' },
+    { icon: FaSpinner, title: 'Pending Requests', value: stats.pending_requests || 0, color: '#fb6340', bg: '#fff0ed' },
+    { icon: FaCheckCircle, title: 'Completed Sessions', value: stats.completed_sessions || 0, color: '#2dce89', bg: '#e8f5e9' },
+    { icon: FaCalendarAlt, title: 'Upcoming Sessions', value: stats.upcoming_sessions || 0, color: '#11cdef', bg: '#e3f7fc' }
   ];
+
+  if (loading) {
+    return <div className="card"><div className="card-body">Loading dashboard...</div></div>;
+  }
 
   return (
     <div>
       <div className="flex-between" style={{ marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Welcome back, Dr. Sarah! 👩‍⚕️</h1>
-          <p style={{ color: '#666' }}>Here's an overview of your therapy practice</p>
+          <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Welcome back, {user?.name?.split(' ')[0] || 'Therapist'}</h1>
+          <p style={{ color: '#666' }}>Here is an overview of your therapy practice.</p>
         </div>
         <Link to="/therapist/availability" className="btn btn-primary">
           <FaCalendarAlt /> Manage Availability
@@ -60,8 +99,8 @@ const TherapistDashboard = () => {
       </div>
 
       <div className="grid grid-4" style={{ marginBottom: '2rem' }}>
-        {cards.map((card, index) => (
-          <div key={index} className="dashboard-card">
+        {cards.map((card) => (
+          <div key={card.title} className="dashboard-card">
             <div className="dashboard-card-icon" style={{ background: card.bg, color: card.color }}>
               <card.icon />
             </div>
@@ -77,7 +116,11 @@ const TherapistDashboard = () => {
             <h4>Session Analytics</h4>
           </div>
           <div className="card-body">
-            <Line data={chartData} options={chartOptions} />
+            {chartGroups.length > 0 ? (
+              <Line data={chartData} options={chartOptions} />
+            ) : (
+              <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>Analytics will appear after sessions are completed.</p>
+            )}
           </div>
         </div>
 
@@ -86,25 +129,21 @@ const TherapistDashboard = () => {
             <h4>Recent Appointment Requests</h4>
           </div>
           <div className="card-body">
-            {recentRequests.map(request => (
-              <div key={request.id} style={{
-                padding: '1rem',
-                borderBottom: '1px solid #e9ecef',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <p style={{ fontWeight: 500 }}>{request.student}</p>
-                  <p style={{ fontSize: '0.875rem', color: '#666' }}>
-                    {request.date} at {request.time}
-                  </p>
+            {recentRequests.length === 0 ? (
+              <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>No pending appointment requests.</p>
+            ) : (
+              recentRequests.map((request) => (
+                <div key={request.appointment_id} style={{ padding: '1rem', borderBottom: '1px solid #e9ecef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontWeight: 500 }}>{request.student_name}</p>
+                    <p style={{ fontSize: '0.875rem', color: '#666' }}>{formatDateTime(request.appointment_date, request.appointment_time)}</p>
+                  </div>
+                  <Link to="/therapist/requests" className="btn btn-sm btn-primary">
+                    Review
+                  </Link>
                 </div>
-                <Link to={`/therapist/requests`} className="btn btn-sm btn-primary">
-                  Review
-                </Link>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <div className="card-footer">
             <Link to="/therapist/requests" style={{ color: '#5e72e4', textDecoration: 'none' }}>

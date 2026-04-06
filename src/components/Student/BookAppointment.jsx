@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { FaCalendarAlt, FaUserMd, FaClock, FaInfoCircle } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaInfoCircle } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { appointmentApi, therapistApi, getErrorMessage } from '../../services/api';
+import { toLocalDateInputValue } from '../../utils/helpers';
 
 const BookAppointment = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -10,40 +12,84 @@ const BookAppointment = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [therapists, setTherapists] = useState([]);
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
-  const therapists = [
-    { id: 1, name: 'Dr. Sarah Johnson', specialization: 'Anxiety & Depression', available: true },
-    { id: 2, name: 'Dr. Michael Chen', specialization: 'Teen Counseling', available: true },
-    { id: 3, name: 'Dr. Emily Rodriguez', specialization: 'Stress Management', available: false }
-  ];
+  const formattedDate = useMemo(() => toLocalDateInputValue(selectedDate), [selectedDate]);
 
-  const timeSlots = [
-    '09:00 AM', '10:00 AM', '11:00 AM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'
-  ];
+  useEffect(() => {
+    const loadTherapists = async () => {
+      try {
+        const { data } = await therapistApi.getAll();
+        setTherapists(data);
+      } catch (error) {
+        toast.error(getErrorMessage(error, 'Failed to load therapists'));
+      }
+    };
+
+    loadTherapists();
+  }, []);
+
+  useEffect(() => {
+    const loadSlots = async () => {
+      if (!selectedTherapist) {
+        setTimeSlots([]);
+        setSelectedTime('');
+        return;
+      }
+
+      setSlotsLoading(true);
+      try {
+        const { data } = await appointmentApi.getAvailableSlots({
+          therapistId: selectedTherapist,
+          date: formattedDate
+        });
+        setTimeSlots(data);
+        setSelectedTime('');
+      } catch (error) {
+        setTimeSlots([]);
+        toast.error(getErrorMessage(error, 'Failed to load time slots'));
+      } finally {
+        setSlotsLoading(false);
+      }
+    };
+
+    loadSlots();
+  }, [formattedDate, selectedTherapist]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedTherapist || !selectedTime || !reason) {
+
+    if (!selectedTherapist || !selectedTime || !reason.trim()) {
       toast.error('Please fill in all fields');
       return;
     }
-    
+
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      toast.success('Appointment request sent successfully!');
-      setLoading(false);
-      // Reset form
+    try {
+      await appointmentApi.book({
+        therapistId: Number(selectedTherapist),
+        appointmentDate: formattedDate,
+        appointmentTime: selectedTime,
+        reason
+      });
+      toast.success('Appointment request sent successfully');
       setSelectedTherapist('');
       setSelectedTime('');
       setReason('');
-    }, 1500);
+      setTimeSlots([]);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to book appointment'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
       <h1 style={{ fontSize: '1.875rem', marginBottom: '2rem' }}>Book a Counselling Session</h1>
-      
+
       <div className="grid grid-2">
         <div>
           <div className="card">
@@ -53,43 +99,46 @@ const BookAppointment = () => {
             <div className="card-body">
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">Choose a Date</label>
-                <Calendar
-                  onChange={setSelectedDate}
-                  value={selectedDate}
-                  minDate={new Date()}
-                  tileDisabled={({ date }) => date.getDay() === 0 || date.getDay() === 6}
-                  style={{ width: '100%', border: 'none' }}
-                />
+                <Calendar onChange={setSelectedDate} value={selectedDate} minDate={new Date()} tileDisabled={({ date }) => date.getDay() === 0 || date.getDay() === 6} style={{ width: '100%', border: 'none' }} />
               </div>
-              
+
               <div>
                 <label className="form-label">Available Time Slots</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  {timeSlots.map(time => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => setSelectedTime(time)}
-                      style={{
-                        padding: '0.5rem',
-                        background: selectedTime === time ? '#5e72e4' : '#f8f9fe',
-                        color: selectedTime === time ? 'white' : '#333',
-                        border: '1px solid #e9ecef',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      <FaClock style={{ marginRight: '0.5rem' }} />
-                      {time}
-                    </button>
-                  ))}
-                </div>
+                {slotsLoading ? (
+                  <p style={{ color: '#666', marginTop: '0.75rem' }}>Loading slots...</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    {timeSlots.length > 0 ? (
+                      timeSlots.map((time) => (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setSelectedTime(time)}
+                          style={{
+                            padding: '0.5rem',
+                            background: selectedTime === time ? '#5e72e4' : '#f8f9fe',
+                            color: selectedTime === time ? 'white' : '#333',
+                            border: '1px solid #e9ecef',
+                            borderRadius: '8px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <FaClock style={{ marginRight: '0.5rem' }} />
+                          {time}
+                        </button>
+                      ))
+                    ) : (
+                      <p style={{ color: '#666', gridColumn: '1 / -1' }}>
+                        {selectedTherapist ? 'No available slots for this date.' : 'Select a therapist to view available slots.'}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-        
+
         <div>
           <div className="card">
             <div className="card-header">
@@ -99,49 +148,31 @@ const BookAppointment = () => {
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label className="form-label">Select Therapist</label>
-                  <select
-                    className="form-control"
-                    value={selectedTherapist}
-                    onChange={(e) => setSelectedTherapist(e.target.value)}
-                    required
-                  >
+                  <select className="form-control" value={selectedTherapist} onChange={(e) => setSelectedTherapist(e.target.value)} required>
                     <option value="">Choose a therapist</option>
-                    {therapists.map(therapist => (
-                      <option key={therapist.id} value={therapist.id} disabled={!therapist.available}>
-                        {therapist.name} - {therapist.specialization}
-                        {!therapist.available && ' (Unavailable)'}
+                    {therapists.map((therapist) => (
+                      <option key={therapist.therapist_id} value={therapist.therapist_id}>
+                        {therapist.full_name} - {therapist.specialization || 'General support'}
                       </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Reason for Appointment</label>
-                  <textarea
-                    className="form-control"
-                    rows="4"
-                    placeholder="Briefly describe what you'd like to discuss..."
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    required
-                  />
+                  <textarea className="form-control" rows="4" placeholder="Briefly describe what you'd like to discuss..." value={reason} onChange={(e) => setReason(e.target.value)} required />
                 </div>
-                
-                <div style={{
-                  background: '#eef2ff',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  marginBottom: '1rem'
-                }}>
+
+                <div style={{ background: '#eef2ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                     <FaInfoCircle style={{ color: '#5e72e4' }} />
                     <strong>Session Information</strong>
                   </div>
                   <p style={{ fontSize: '0.875rem', color: '#666' }}>
-                    Each session lasts approximately 50 minutes. All sessions are confidential and conducted in a safe, supportive environment.
+                    Sessions are booked in 30-minute slots based on therapist availability. Your therapist will review and approve the request.
                   </p>
                 </div>
-                
+
                 <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
                   {loading ? 'Booking...' : 'Book Appointment'}
                   <FaCalendarAlt />
